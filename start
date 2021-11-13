@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+/**
+ * OAPI 初始化入口
+ * 
+ * @Author: ohmyga
+ * @Date: 2021-10-21 22:35:06
+ * @LastEditTime: 2021-10-21 22:37:24
+ */
+
+/** 定义运行根目录 */
+define("__OAPI_ROOT_DIR__", __DIR__);
+
+/** 引入启动入口 */
+require_once __OAPI_ROOT_DIR__ . "/src/bin/OAPI.php";

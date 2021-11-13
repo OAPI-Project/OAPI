@@ -1,0 +1,32 @@
+{
+  "name": "oapi-project/oapi",
+  "description": "ohmyga's API Server",
+  "type": "project",
+  "license": "GNU Affero General Public License v3.0",
+  "authors": [
+    {
+      "name": "ohmyga",
+      "email": "i@ohmyga.top"
+    }
+  ],
+  "version": "1.0.0",
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=7.4",
+    "ext-json": "*",
+    "symfony/yaml": "^5.3"
+  },
+  "require-dev": {
+    "swoole/ide-helper": "@dev"
+  },
+  "autoload": {
+    "psr-4": {
+      "OAPI\\": "src\\OAPI",
+      "OAPIPlugin\\": "src\\Plugins"
+    },
+    "files": [
+      "src/OAPI/global_function.php"
+    ]
+  }
+}

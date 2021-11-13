@@ -1,0 +1,57 @@
+---
+#-------------------
+# OAPI 配置文件
+#-------------------
+
+# HTTP 服务器
+server:
+  host: "0.0.0.0"
+  port: 43232
+  # HTTP 固定头部
+  header:
+    - Server: "OAPI-Server"
+
+# 部分 Swoole 的配置
+swoole:
+  log_file: "{log_dir}/swoole/error.log"
+  max_wait_time: 10
+
+# 站点信息
+site:
+  name: "O's API"
+  desc: "ohmyga's API Server"
+
+# 数据库信息
+database:
+  adapter: "mysql" # 数据库适配器
+  host: ""
+  port: ""
+  dbname: ""
+  username: ""
+  password: ""
+  charset: ""
+  prefix: "OAPI_"
+  engine: "InnoDB" # InnoDB | MyISAM
+  # 连接池
+  pool:
+    size: 32
+    timeout: 600  # 数据库连接最长可存活时间
+    check_timeout: 60000 # 检查连接是否可用的间隔 (单位毫秒) | 如果为 0 则以数据库最长可存活秒数转换为毫秒
+
+# Redis连接信息
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  auth: ""
+  timeout: 0
+  db_index: 0
+
+# 日志配置
+log:
+  level: 0
+  error_dir: "{log_dir}/error"
+  normal_dir: "{log_dir}/normal"
+  debug: false # 此选项受 global_defines.php 中的常量 __JYCHELPER_DEBUG__ 的影响，所以修改此处并没有任何效果，只是为了在这写个说明罢了
+
+# 时区
+timezone: "Asia/Shanghai"
