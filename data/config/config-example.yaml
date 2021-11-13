@@ -6,7 +6,7 @@
 # HTTP 服务器
 server:
   host: "0.0.0.0"
-  port: 43232
+  port: 23333
   # HTTP 固定头部
   header:
     - Server: "OAPI-Server"
@@ -51,7 +51,7 @@ log:
   level: 0
   error_dir: "{log_dir}/error"
   normal_dir: "{log_dir}/normal"
-  debug: false # 此选项受 global_defines.php 中的常量 __JYCHELPER_DEBUG__ 的影响，所以修改此处并没有任何效果，只是为了在这写个说明罢了
+  debug: false # 此选项受 global_defines.php 中的常量 __OAPI_DEBUG__ 的影响，所以修改此处并没有任何效果，只是为了在这写个说明罢了
 
 # 时区
 timezone: "Asia/Shanghai"
