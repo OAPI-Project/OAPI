@@ -124,7 +124,8 @@ class Plugin implements PluginInterface
             "timezone"      => $config["timezone"]
         ];
 
-        if (self::$_db->fetchRow(self::$_db->select("count(*)")->from("table.admin_users"))["count(*)"] > 0) $data["hasAdminUser"] = true;
+        $alluser_count = self::$_db->fetchRow(self::$_db->select("count(*)")->from("table.admin_users"));
+        if (!empty($alluser_count) && $alluser_count["count(*)"] > 0) $data["hasAdminUser"] = true;
         if (self::$_db->fetchRow(self::$_db->select()->from("table.admin_options")->where("name = ?", "installed"))) $data["installed"] = true;
 
         if ($data["hasAdminUser"] === true && $data["installed"] === true) $data["loginStatus"] = self::checkAuth(false);
@@ -152,7 +153,10 @@ class Plugin implements PluginInterface
 
         /** 从数据库中获取安装密钥 */
         $ica = self::$_db->fetchRow(self::$_db->select()->from("table.admin_options")->where("name = ?", "installAuthCode"));
-        if (!hash_equals($token, $ica["value"])) {
+        if (empty($ica)) {
+            HTTP::sendJSON(false, 500, "服务器内部错误 (插件未被初始化)");
+            return false;
+        } else if (!hash_equals($token, $ica["value"])) {
             HTTP::sendJSON(false, 403, "安装密钥验证验证失败");
             return false;
         }
@@ -169,10 +173,15 @@ class Plugin implements PluginInterface
         if (empty($password)) {
             HTTP::sendJSON(false, 400, "密码不可为空", ["input" => "password"]);
             return false;
+        } else if (!preg_match("/^\S*(?=\S{6,})\S*$/", $password)) {
+            HTTP::sendJSON(false, 400, "密码最少六位", ["input" => "password"]);
+            return false;
+        }
+        /* 越想越觉得密码限制格式很不友好，所以改为只限制密码最少位数
         } else if (!preg_match("/^\S*(?=\S{8,})(?=\S*\d)(?=\S*[A-Z])(?=\S*[a-z])(?=\S*[\.!@#$%^&*?])\S*$/", $password)) {
             HTTP::sendJSON(false, 400, "密码最少八位，需包含一个大写字母，一个小写字母，一个数字，以及一个特殊符号", ["input" => "password"]);
             return false;
-        }
+        }*/
 
         /** 邮箱 */
         $mail = HTTP::getParams("mail", "");
