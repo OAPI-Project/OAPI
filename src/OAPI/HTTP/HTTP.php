@@ -1,8 +1,9 @@
 <?php
+
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 12:06:22
- * @LastEditTime: 2021-11-14 01:12:15
+ * @LastEditTime: 2021-11-23 00:25:19
  */
 
 namespace OAPI\HTTP;
@@ -18,7 +19,7 @@ class HTTP
     {
         self::setCode(204);
         self::setHeader("Access-Control-Allow-Headers", "Origin, No-Cache, X-Requested-With, If-Modified-Since, Pragma, Last-Modified, Cache-Control, Expires, Content-Type, Authorization");
-        self::setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        self::setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     }
 
     /**
@@ -164,15 +165,17 @@ class HTTP
     public static function getParams($key, $default = null)
     {
         if (strtolower(Framework::$server_method["request"]->server["request_method"]) == "get") {
-            if (!empty(Framework::$server_method["request"]->get[$key])) {
+            if (!empty(Framework::$server_method["request"]->get[$key]) || isset(Framework::$server_method["request"]->get[$key])) {
                 return Framework::$server_method["request"]->get[$key];
             }
         }
 
-        if (strtolower(Framework::$server_method["request"]->server["request_method"]) == "post") {
+        if (strtolower(Framework::$server_method["request"]->server["request_method"]) == "post" || strtolower(Framework::$server_method["request"]->server["request_method"]) == "delete") {
             if (is_array(json_decode(Framework::$server_method["request"]->rawContent(), true))) {
                 $data = json_decode(Framework::$server_method["request"]->rawContent(), true);
-                return (!empty($data[$key])) ? $data[$key] : $default;
+                if (!empty($data[$key]) || isset($data[$key])) return $data[$key];
+                if (!empty(Framework::$server_method["request"]->get[$key]) || isset(Framework::$server_method["request"]->get[$key])) return Framework::$server_method["request"]->get[$key];
+                return $default;
             } else if (!empty(Framework::$server_method["request"]->post[$key])) {
                 return Framework::$server_method["request"]->post[$key];
             }
@@ -180,7 +183,7 @@ class HTTP
 
         if (!empty(Framework::$server_method["request"]->get)) {
             $data = Framework::$server_method["request"]->get;
-            return (!empty($data[$key])) ? $data[$key] : $default;
+            return (!empty($data[$key]) || isset($data[$key])) ? $data[$key] : $default;
         } else {
             return $default;
         }
