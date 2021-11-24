@@ -1,8 +1,9 @@
 <?php
+
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 11:33:08
- * @LastEditTime: 2021-11-14 01:12:46
+ * @LastEditTime: 2021-11-17 21:53:50
  */
 
 namespace OAPI\DB;
@@ -38,7 +39,7 @@ class DB
     /**
      * 连接池最大数量
      */
-    private static $_pool_size = 32;
+    private static $_pool_size = 64;
 
     /**
      * 连接超时时间
@@ -96,7 +97,6 @@ class DB
 
     public function ___initPool()
     {
-        $this->addPool();
         Timer::tick(self::$_timer_check_ms, function () {
             if (empty(self::$_pool) && count(self::$_pool) <= 0) {
                 $this->addPool();
@@ -127,13 +127,32 @@ class DB
      * @return array
      * @access private
      */
-    public function addPool(): array
+    public function addPool(bool $locked = false): array
     {
         if (count(self::$_pool) <= self::$_pool_size) {
             return self::$_pool[] = [
+                "id"            =>  (int)(mt_rand(100, mt_rand(300, 900)) . substr(time(), 0, 3) . date("His")),
+                "locked"        =>  $locked,
                 "create_time"   =>  time(),
                 "instance"      =>  $this->_adapter->init($this->_config)
             ];
+        } else {
+            foreach (self::$_pool as $key => $item) {
+                self::$_pool[$key]["locked"] = false;
+            }
+            return self::$_pool[mt_rand(0, count(self::$_pool) - 1)];
+        }
+    }
+
+    private function _changelockConnect($id, $lock = false)
+    {
+        $_pool = !empty(self::$_pool) ? self::$_pool : [];
+
+        foreach ($_pool as $key => $item) {
+            if ($item["id"] == $id) {
+                self::$_pool[$key]["locked"] = ($lock === true) ? true : false;
+                break;
+            }
         }
     }
 
@@ -184,7 +203,7 @@ class DB
      */
     public function clearPool()
     {
-        $this->_pool = [];
+        self::$_pool = [];
     }
 
     /**
@@ -192,10 +211,26 @@ class DB
      * 
      * @return mixed
      */
-    public function selectDb()
+    public function selectDb($op = 0, $reid = false)
     {
         if (!empty(self::$_pool)) {
-            return (self::$_pool[round(0, (count(self::$_pool) - 1))])["instance"];
+            $_hasUnLock = false;
+            $_selectDB = [];
+            foreach (self::$_pool as $key => $item) {
+                if ($item["locked"] === false) {
+                    $_selectDB = $item;
+                    $_hasUnLock = true;
+                }
+            }
+
+            if ($_hasUnLock === false) {
+                $add = $this->addPool(true);
+                return (!empty($add)) ? (($reid === true) ? $add : $add["instance"]) : [];
+            } else {
+                $this->_changelockConnect($_selectDB["id"], true);
+            }
+
+            return ($reid === true) ? $_selectDB : $_selectDB["instance"];
         }
     }
 
@@ -308,20 +343,22 @@ class DB
         }
 
         /** 选择连接池 */
-        $handle = $this->selectDb($op);
+        $handle = $this->selectDb($op, true);
 
         /** 提交查询 */
         $resource = $this->_adapter->query($query instanceof Query ?
-            $query->prepare($query) : $query, $handle, $op, $action, $table);
+            $query->prepare($query) : $query, $handle["instance"], $op, $action, $table);
+
+        $this->_changelockConnect($handle["id"], false);
 
         if ($action) {
             //根据查询动作返回相应资源
             switch ($action) {
                 case Consts::UPDATE:
                 case Consts::DELETE:
-                    return $this->_adapter->affectedRows($resource, $handle);
+                    return $this->_adapter->affectedRows($resource, $handle["instance"]);
                 case Consts::INSERT:
-                    return $this->_adapter->lastInsertId($resource, $handle);
+                    return $this->_adapter->lastInsertId($resource, $handle["instance"]);
                 case Consts::SELECT:
                 default:
                     return $resource;
