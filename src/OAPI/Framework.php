@@ -4,7 +4,7 @@
  * 
  * @Author: ohmyga
  * @Date: 2021-10-21 22:43:24
- * @LastEditTime: 2021-11-14 01:08:39
+ * @LastEditTime: 2021-11-23 00:52:33
  */
 
 namespace OAPI;
@@ -22,6 +22,9 @@ use OAPI\HTTP\Router;
 use OAPI\Plugin\Plugin;
 use Swoole\Http\Server;
 
+use function time;
+use function explode;
+use function file_exists, file_get_contents;
 use function date_default_timezone_set;
 
 class Framework
@@ -55,10 +58,18 @@ class Framework
     private static $_redisserver;
 
     /**
+     * OAPI 启动时间
+     */
+    public static $start_run_time = 0;
+
+    /**
      * 框架初始化
      */
     public function __construct()
     {
+        // 设置框架启动的时间
+        self::$start_run_time = time();
+
         /** 引入常量 */
         require_once __DIR__ . "/global_defines.php";
 
