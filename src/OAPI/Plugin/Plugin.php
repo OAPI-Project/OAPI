@@ -2,7 +2,7 @@
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 12:10:47
- * @LastEditTime: 2021-11-10 22:26:04
+ * @LastEditTime: 2021-11-29 03:01:30
  */
 
 namespace OAPI\Plugin;
@@ -295,6 +295,25 @@ class Plugin
 
         if ($console === true) Console::warning("插件 [" . $package . "] 不存在", "Plugin");
         return $_has;
+    }
+
+    /**
+     * 获取插件信息
+     * (无论是否启用)
+     * 
+     * @param string $package     插件包名
+     * @return array
+     */
+    public static function getInfo($package): array {
+        $_plugin = [];
+        foreach (self::$_plugins as $plugin) {
+            if ($plugin["package"] == $package) {
+                $_plugin = $plugin;
+                break;
+            }
+        }
+
+        return !empty($_plugin) ? $_plugin : [];
     }
 
     /**
