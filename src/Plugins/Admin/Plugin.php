@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OAPI Admin API
  * 
@@ -178,6 +177,11 @@ class Plugin implements PluginInterface
 
         if (empty($package)) {
             HTTP::sendJSON(false, 400, "请提供包名");
+            return false;
+        }
+
+        if (\OAPI\Plugin\Plugin::getInfo($package)["status"] == "disable") {
+            HTTP::sendJSON(false, 404, "页面丢失了");
             return false;
         }
 
