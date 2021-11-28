@@ -2,7 +2,7 @@
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 12:33:10
- * @LastEditTime: 2021-10-22 12:33:32
+ * @LastEditTime: 2021-11-23 00:40:56
  */
 
 namespace OAPIPlugin\Admin;
@@ -16,9 +16,9 @@ class User
 
     private static $_db;
 
-    public function __construct($db = null)
+    public function __construct()
     {
-        self::$_db = ($db == null) ? DB::get() : $db;
+        self::$_db = DB::get();
     }
 
     /**
@@ -94,20 +94,28 @@ class User
      * 
      * @param int|string $uid          用户 UID
      * @param string $authCode         AuthCode
-     * @return boolean
+     * @param bool $userinfo           是否返回登录用户的信息
+     * @return boolean | array
      */
-    public static function checkAuth($uid, $authCode): bool
+    public static function checkAuth($uid, $authCode, $userinfo = false)
     {
         $user = self::$_db->fetchRow(
             self::$_db
                 ->select()
                 ->from("table.admin_users")
-                ->where("uid = ?", $uid)
+                ->where("uid = ?", (int)$uid)
         );
 
-        if (empty($user)) return false;
+        if (empty($user) || empty($user["authCode"])) return false;
         if (!hash_equals($authCode, $user["authCode"])) return false;
 
+        if ($userinfo === true) {
+            // 输出返回前过滤敏感信息
+            $_user = $user;
+            unset($_user["password"]); // 过滤密码
+            unset($_user["authCode"]); // 过滤登录校验密钥
+            return $_user;
+        }
         return true;
     }
 }

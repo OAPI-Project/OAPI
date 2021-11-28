@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OAPI Admin API
  * 
@@ -105,7 +106,8 @@ class Plugin implements PluginInterface
             }
         }
 
-        new User(self::$_db);
+        new User();
+        new Menu();
     }
 
     /**
@@ -125,12 +127,96 @@ class Plugin implements PluginInterface
         ];
 
         $alluser_count = self::$_db->fetchRow(self::$_db->select("count(*)")->from("table.admin_users"));
-        if (!empty($alluser_count) && $alluser_count["count(*)"] > 0) $data["hasAdminUser"] = true;
+        if (!empty($alluser_count) && @$alluser_count["count(*)"] > 0) $data["hasAdminUser"] = true;
         if (self::$_db->fetchRow(self::$_db->select()->from("table.admin_options")->where("name = ?", "installed"))) $data["installed"] = true;
 
         if ($data["hasAdminUser"] === true && $data["installed"] === true) $data["loginStatus"] = self::checkAuth(false);
 
         HTTP::sendJSON(true, 200, "Success", $data);
+    }
+
+    /**
+     * AdminAPI 初始化
+     * 
+     * @version 1
+     * @path /admin/console/init
+     */
+    public static function consoleInit_Action($request, $response, $matches)
+    {
+        if (HTTP::lockMethod(["GET"]) == false) return;
+        $user = self::checkAuth(true, true);
+        if (!$user) return;
+
+        // 获取 Menu 配置
+        $menu_config = Menu::config();
+
+        $result = [
+            "menu"        => $menu_config,
+            "framework"   => [
+                "version"       => __OAPI_VERSION__,
+                "plugin_count"  => count(\OAPI\Plugin\Plugin::getAllPlugins()),
+                "run_time"      => \OAPI\Framework::$start_run_time
+            ],
+            "user"        => $user
+        ];
+
+        HTTP::sendJSON(true, 200, "Success", $result);
+    }
+
+    /**
+     * 获取 Vue Template
+     * 
+     * @version 1
+     * @path /admin/plugin/vue-template
+     */
+    public static function vueTemplate_Action($request, $response, $matches)
+    {
+        if (HTTP::lockMethod(["GET"]) == false) return;
+        if (!self::checkAuth()) return;
+
+        $package = HTTP::getParams("package", "");
+
+        if (empty($package)) {
+            HTTP::sendJSON(false, 400, "请提供包名");
+            return false;
+        }
+
+        $page = HTTP::getParams("page", "");
+
+        if (empty($page)) {
+            HTTP::sendJSON(false, 400, "请提供页面id");
+            return false;
+        }
+
+        // 拼接类名
+        $class = "\OAPIPlugin\\" . $package . "\\Plugin";
+
+        if (!method_exists($class, "page_handler")) {
+            HTTP::sendJSON(false, 404, "页面丢失了");
+            return false;
+        }
+
+        $result = call_user_func([$class, "page_handler"], $page);
+
+        if ($result["status"] === false) {
+            HTTP::sendJSON(false, $result["code"], $result["message"]);
+            return false;
+        }
+
+        if (!empty($result["isJSON"]) && $result["isJSON"] === true) {
+            HTTP::sendJSON(
+                true,
+                200,
+                "Success",
+                $result["data"],
+                !empty($result["more"]) && is_array($result["more"]) ? $result["more"] : []
+            );
+            return true;
+        }
+
+        HTTP::send(200, $result["data"], [
+            "content-type" => "application/javascript; charset=utf-8"
+        ]);
     }
 
     /**
@@ -330,9 +416,9 @@ class Plugin implements PluginInterface
     /**
      * 检查权限
      * 
-     * @return boolean
+     * @return boolean | array
      */
-    public static function checkAuth($send = true): bool
+    public static function checkAuth($send = true, $userinfo = false)
     {
         $authorization = HTTP::getHeader("Authorization", "");
 
@@ -348,13 +434,14 @@ class Plugin implements PluginInterface
             return false;
         }
 
-        $check_auth = User::checkAuth($authorization["admin_uid"], $authorization["admin_auth"]);
+        $check_auth = User::checkAuth($authorization["admin_uid"], $authorization["admin_auth"], (($userinfo === true) ? true : false));
 
         if (!$check_auth) {
             if ($send === true) HTTP::sendJSON(false, 403, "Forbidden");
             return false;
         }
 
+        if ($userinfo === true) return $check_auth;
         return true;
     }
 
