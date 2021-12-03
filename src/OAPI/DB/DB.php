@@ -1,9 +1,8 @@
 <?php
-
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 11:33:08
- * @LastEditTime: 2021-11-17 21:53:50
+ * @LastEditTime: 2021-12-03 12:28:27
  */
 
 namespace OAPI\DB;
@@ -64,8 +63,8 @@ class DB
 
         $adapterName = '\OAPI\DB\Adapter\\' . str_replace('_', '\\', $adapterName);
 
-        if (!call_user_func([$adapterName, 'isAvailable'])) {
-            throw new \Exception("Adapter {$adapterName} is not available");
+        if (!method_exists($adapterName, 'isAvailable')) {
+            throw new \Exception("没有找到名为 {$this->_adapterName} 的数据库适配器");
         }
 
         $this->_prefix = $prefix;
