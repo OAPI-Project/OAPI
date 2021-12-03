@@ -123,8 +123,8 @@ class Framework
             }
 
             Console::diy(Console::color("| OAPI Version: " . __OAPI_VERSION__, "blue"), false, null, true, false);
-            Console::diy(Console::color("| Author: ohmyga (https://github.com/bakaomg)", "blue"), false, null, true, false);
-            Console::diy(Console::color("| Github: https://github.com/bakaomg/OAPI", "blue"), false, null, true, false);
+            Console::diy(Console::color("| Author: OAPI Project (https://github.com/OAPI-Project)", "blue"), false, null, true, false);
+            Console::diy(Console::color("| Github: https://github.com/OAPI-Project/OAPI", "blue"), false, null, true, false);
             Console::diy(Console::color("| LICENSE: AGPL v3.0 (https://www.gnu.org/licenses/agpl-3.0.html)", "blue"), false, null, true, false);
             Console::diy(Console::color($eline, "blue"), false, null, true, false);
             Console::info("控制台初始化完成", "Console");
