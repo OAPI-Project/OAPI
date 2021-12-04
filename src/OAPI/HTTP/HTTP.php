@@ -1,9 +1,8 @@
 <?php
-
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 12:06:22
- * @LastEditTime: 2021-11-23 00:25:19
+ * @LastEditTime: 2021-12-05 03:06:50
  */
 
 namespace OAPI\HTTP;
@@ -306,12 +305,12 @@ class HTTP
     }
 
     /**
-     * 判断是否为 PUT
+     * 判断是否为 DELETE
      * 
      * @return bool
      */
     public static function isDelete(): bool
     {
-        return (self::getMethod() == "put") ? true : false;
+        return (self::getMethod() == "delete") ? true : false;
     }
 }
