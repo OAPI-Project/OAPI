@@ -481,7 +481,7 @@ class Plugin implements PluginInterface
                 $url = "/" . $_admin_path . ((!empty($parseInfo[$name])) ?  $parseInfo[$name] : $matches[1]);
                 $routes[] = [
                     "action"         => $matches[0],
-                    "name"           => 'OAPI_' . $matches[1],
+                    "name"           => 'OAPI_AdminAPI_' . $matches[1],
                     "url"            => $url,
                     "version"        => (!empty($parseInfo["version"])) ? $parseInfo["version"] : 1,
                     "disableVersion" => (isset($parseInfo["disableVersion"])) ? $parseInfo["disableVersion"] : false,
