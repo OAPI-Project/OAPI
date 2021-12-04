@@ -16,9 +16,12 @@ use OAPI\DB\Consts;
 use OAPI\Console\Console;
 use OAPI\LogCat\Error;
 use OAPI\HTTP\HTTP;
+use OAPI\HTTP\Router;
 use OAPI\Libs\Libs;
 use OAPI\Config\Config;
 use OAPI\Plugin\Exception;
+
+use ReflectionClass, ReflectionMethod;
 use function password_hash;
 use function json_decode, base64_decode;
 
@@ -28,6 +31,13 @@ class Plugin implements PluginInterface
      * 数据库实例缓存
      */
     private static $_db;
+
+    /**
+     * Admin API Path
+     * 在生产环境使用时请按需修改
+     * 不需要加上 /
+     */
+    private static $_admin_path = "admin";
 
     /**
      * 激活插件方法
@@ -82,7 +92,7 @@ class Plugin implements PluginInterface
     public static function run()
     {
         self::$_db = DB::get();
-        \OAPI\Plugin\Plugin::actionRegisterRouter(__CLASS__);
+        self::addAdminRouter(__CLASS__);
 
         if (!self::__checkTable(self::$_db, "admin_users")) throw new Exception("AdminAPI 的数据库表未初始化，请重新启用插件！");
 
@@ -114,9 +124,9 @@ class Plugin implements PluginInterface
      * (用于判断是否安装/初始化)
      * 
      * @version 1
-     * @path /admin/check/init
+     * @path /check/init
      */
-    public static function checkInit_Action($request, $response, $matches)
+    public static function checkInit_Admin_Action($request, $response, $matches)
     {
         $config = Config::get("config");
         $data = [
@@ -138,9 +148,9 @@ class Plugin implements PluginInterface
      * AdminAPI 初始化
      * 
      * @version 1
-     * @path /admin/console/init
+     * @path /console/init
      */
-    public static function consoleInit_Action($request, $response, $matches)
+    public static function consoleInit_Admin_Action($request, $response, $matches)
     {
         if (HTTP::lockMethod(["GET"]) == false) return;
         $user = self::checkAuth(true, true);
@@ -166,9 +176,9 @@ class Plugin implements PluginInterface
      * 获取 Vue Template
      * 
      * @version 1
-     * @path /admin/plugin/vue-template
+     * @path /plugin/vue-template
      */
-    public static function vueTemplate_Action($request, $response, $matches)
+    public static function vueTemplate_Admin_Action($request, $response, $matches)
     {
         if (HTTP::lockMethod(["GET"]) == false) return;
         if (!self::checkAuth()) return;
@@ -227,9 +237,9 @@ class Plugin implements PluginInterface
      * 初始化安装
      * 
      * @version 1
-     * @path /admin/install
+     * @path /install
      */
-    public static function install_Action($request, $response, $matches)
+    public static function install_Admin_Action($request, $response, $matches)
     {
         if (HTTP::lockMethod("POST") == false) return;
 
@@ -309,9 +319,9 @@ class Plugin implements PluginInterface
      * 登录接口
      * 
      * @version 1
-     * @path /admin/login
+     * @path /login
      */
-    public static function login_Action($request, $response, $matches)
+    public static function login_Admin_Action($request, $response, $matches)
     {
         if (HTTP::lockMethod("POST") == false) return;
 
@@ -346,9 +356,9 @@ class Plugin implements PluginInterface
      * 获取插件列表
      * 
      * @version 1
-     * @path /admin/plugin/list
+     * @path /plugin/list
      */
-    public static function pluginList_Action($request, $response, $matches)
+    public static function pluginList_Admin_Action($request, $response, $matches)
     {
         if (HTTP::lockMethod(["GET"]) == false) return;
         if (!self::checkAuth()) return;
@@ -362,9 +372,9 @@ class Plugin implements PluginInterface
      * 启用 / 禁用插件
      * 
      * @version 1
-     * @path /admin/plugin/modify
+     * @path /plugin/modify
      */
-    public static function modifyPlugin_Action($request, $response, $matches)
+    public static function modifyPlugin_Admin_Action($request, $response, $matches)
     {
         if (HTTP::lockMethod(["GET"]) == false) return;
         if (!self::checkAuth()) return;
@@ -395,9 +405,9 @@ class Plugin implements PluginInterface
      * 获取单个插件的信息
      * 
      * @version 1
-     * @path /admin/plugin/get
+     * @path /plugin/get
      */
-    public static function getOnePluginInfo_Action($request, $response, $matches)
+    public static function getOnePluginInfo_Admin_Action($request, $response, $matches)
     {
         if (HTTP::lockMethod(["GET"]) == false) return;
         if (!self::checkAuth()) return;
@@ -447,6 +457,48 @@ class Plugin implements PluginInterface
 
         if ($userinfo === true) return $check_auth;
         return true;
+    }
+
+    /**
+     * 批量注册 Admin 使用接口
+     * 
+     * @param string $class      类名
+     * @param string $name       Path 注解名
+     */
+    public static function addAdminRouter($class, $name = "path")
+    {
+        $routes = [];
+
+        $ReflectionClass = new ReflectionClass(!empty($class) ? $class : __CLASS__);
+
+        foreach ($ReflectionClass->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            preg_match('/(.*)_Admin_Action$/', $method->getName(), $matches);
+
+            if (!empty($matches[1])) {
+                $parseInfo = Libs::parseInfo($method->getDocComment());
+
+                $_admin_path = str_replace("/", "", self::$_admin_path);
+                $url = "/" . $_admin_path . ((!empty($parseInfo[$name])) ?  $parseInfo[$name] : $matches[1]);
+                $routes[] = [
+                    "action"         => $matches[0],
+                    "name"           => 'OAPI_' . $matches[1],
+                    "url"            => $url,
+                    "version"        => (!empty($parseInfo["version"])) ? $parseInfo["version"] : 1,
+                    "disableVersion" => (isset($parseInfo["disableVersion"])) ? $parseInfo["disableVersion"] : false,
+                    "description"    => $parseInfo['description']
+                ];
+            }
+        }
+
+        foreach ($routes as $key => $route) {
+            Router::add([
+                "name"            => $route["name"],
+                "url"             => $route["url"],
+                "version"         => $route["version"],
+                "disableVersion"  => $route["disableVersion"],
+                "widget"          => $class . "::" . $route["action"],
+            ]);
+        }
     }
 
     /**
