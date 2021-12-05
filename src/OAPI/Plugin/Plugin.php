@@ -2,7 +2,7 @@
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 12:10:47
- * @LastEditTime: 2021-11-29 03:01:30
+ * @LastEditTime: 2021-12-05 18:24:30
  */
 
 namespace OAPI\Plugin;
@@ -362,9 +362,10 @@ class Plugin
         $ReflectionClass = new ReflectionClass(!empty($class) ? $class : __CLASS__);
 
         foreach ($ReflectionClass->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            preg_match('/(.*)_Action$/', $method->getName(), $matches);
+            preg_match('/(.*)_Action$/i', $method->getName(), $matches);
+            preg_match('/(.*)_Admin_Action$/i', $method->getName(), $admin_matches);
 
-            if (!empty($matches[1])) {
+            if (!empty($matches[1]) && empty($admin_matches[1])) {
                 $parseInfo = Libs::parseInfo($method->getDocComment());
                 $routes[] = [
                     'action'         => $matches[0],
