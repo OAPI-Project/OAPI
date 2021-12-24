@@ -4,7 +4,7 @@
  * 
  * @Author: ohmyga
  * @Date: 2021-10-21 22:43:24
- * @LastEditTime: 2021-11-23 00:52:33
+ * @LastEditTime: 2021-12-25 03:00:04
  */
 
 namespace OAPI;
@@ -61,6 +61,37 @@ class Framework
      * OAPI 启动时间
      */
     public static $start_run_time = 0;
+
+    /**
+     * 运行所需拓展
+     */
+    private $_need_extensions = [
+        [
+            "extension" => "swoole",
+            "func"      => "extension_loaded",
+            "required"  => true,
+        ],
+        [
+            "extension" => "imagick",
+            "func"      => "extension_loaded",
+            "required"  => false,
+        ],
+        [
+            "extension" => "curl_exec",
+            "func"      => "function_exists",
+            "required"  => true,
+        ],
+        [
+            "extension" => "mb_substr",
+            "func"      => "function_exists",
+            "required"  => true,
+        ],
+        [
+            "extension" => "ZipArchive",
+            "func"      => "class_exists",
+            "required"  => false,
+        ]
+    ];
 
     /**
      * 框架初始化
@@ -122,16 +153,49 @@ class Framework
                 Console::diy(Console::color($eline, "blue"), false, null, true, false);
             }
 
+            Console::diy(Console::color("| PHP Version: " . substr(PHP_VERSION, 0, 3), "lightblue"), false, null, true, false);
             Console::diy(Console::color("| OAPI Version: " . __OAPI_VERSION__, "blue"), false, null, true, false);
-            Console::diy(Console::color("| Author: OAPI Project (https://github.com/OAPI-Project)", "blue"), false, null, true, false);
+            Console::diy(Console::color("| Author: OAPI Project (https://github.com/OAPI-Project)", "lightblue"), false, null, true, false);
             Console::diy(Console::color("| Github: https://github.com/OAPI-Project/OAPI", "blue"), false, null, true, false);
-            Console::diy(Console::color("| LICENSE: AGPL v3.0 (https://www.gnu.org/licenses/agpl-3.0.html)", "blue"), false, null, true, false);
+            Console::diy(Console::color("| LICENSE: AGPL v3.0 (https://www.gnu.org/licenses/agpl-3.0.html)", "lightblue"), false, null, true, false);
             Console::diy(Console::color($eline, "blue"), false, null, true, false);
             Console::info("控制台初始化完成", "Console");
         } catch (\Exception $e) {
             echo "控制台初始化失败，无法正常使用，请查阅错误日志" . PHP_EOL;
             Error::eachxception_handler($e, false);
         }
+
+        // 判断安装环境
+        try {
+            if (count($this->_need_extensions) > 0) {
+                $_log_level_arr = [];
+                $_required_ext = "";
+
+                $console = function ($extension, $required = false) {
+                    $level = ($required === true) ? "error" : "warning";
+                    $message = "未找到 {$extension} 拓展，";
+                    $message .= ($required === true) ? "请安装相应拓展后再继续运行。" : "建议安装相应拓展 (非必选)";
+                    Console::$level(
+                        $message,
+                        "Framework"
+                    );
+                };
+
+                foreach ($this->_need_extensions as $extension) {
+                    if (!$extension["func"]($extension["extension"])) {
+                        if ($extension["required"]) $_log_level_arr[] = 1;
+                        if ($extension["required"]) $_required_ext .= $extension["extension"] . ", ";
+                        $console($extension["extension"], $extension["required"]);
+                    }
+                }
+
+                if (in_array(1, $_log_level_arr)) throw new Exception("缺少必要拓展: " . substr($_required_ext, 0, -2));
+            }
+        } catch (\Exception $e) {
+            Console::error("发生错误，请查阅日志。", "Framework");
+            Error::eachxception_handler($e, false);
+        }
+
 
         // 初始化数据库
         try {
