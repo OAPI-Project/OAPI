@@ -2,7 +2,7 @@
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 11:03:01
- * @LastEditTime: 2021-10-22 11:05:11
+ * @LastEditTime: 2021-12-25 03:03:12
  */
 
 namespace OAPI\Console;
@@ -180,7 +180,7 @@ class Console {
      */
     public static function diy($body, $time = false, $module = null, $eol = false, $ret = false, $saveLog = true)
     {
-        $text = ($time === true) ? date("[H:i:s]") : "";
+        $text = ($time === true) ? date("[Y-m-d H:i:s]") : "";
         $text .= ($module !== null) ? "[{$module}] " : " ";
         $text .= $body;
         $text .= ($eol === true) ? PHP_EOL : "";
@@ -201,7 +201,7 @@ class Console {
      */
     private static function getHead($head)
     {
-        $text = date("[H:i:s]") . "[{$head}]";
+        $text = date("[Y-m-d H:i:s]") . "[{$head}]";
 
         return $text;
     }
