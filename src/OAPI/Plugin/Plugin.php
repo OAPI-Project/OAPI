@@ -1,8 +1,10 @@
 <?php
 /**
+ * 插件模块
+ * 
  * @Author: ohmyga
  * @Date: 2021-10-22 12:10:47
- * @LastEditTime: 2021-12-05 18:24:30
+ * @LastEditTime: 2021-12-28 01:52:13
  */
 
 namespace OAPI\Plugin;
@@ -105,6 +107,8 @@ class Plugin
                         $db->query($db->update("table.plugins")->rows(["name" => $_pl_raw["name"]])->where("package = ?", $plugin["package"]));
                     }
                     if ($_pl_raw["version"] != $plugin["version"]) {
+                        if ($_pl_raw["version"] > $plugin["version"]) self::update($_pl_raw["package"]);
+                        if ($_pl_raw["version"] < $plugin["version"]) Console::warning("插件 [" . $_pl_raw["package"] ."] 现有版本 Ver". $_pl_raw["version"] . " 低于已经安装的版本 Ver" .$plugin["version"] . " ，可能会出现兼容性问题甚至报错。", "Plugin");
                         $db->query($db->update("table.plugins")->rows(["version" => $_pl_raw["version"]])->where("package = ?", $plugin["package"]));
                     }
                 } else {
@@ -148,7 +152,7 @@ class Plugin
     {
         foreach (self::$_enabled as $enable) {
             $epl = self::__loadPlugin($enable);
-            if ($epl["status"] === false) throw new \Exception($epl["message"]);
+            if ($epl["status"] === false) throw new Exception($epl["message"]);
             self::$_instance_plugins[$enable["package"]] = $epl["instance"];
         }
 
@@ -196,9 +200,11 @@ class Plugin
         }
 
         $plugin = self::$_plugins[$package];
-        $has = (self::$_db->fetchRow(self::$_db->select()->from('table.plugins')->where('package = ?', $package))) ? true : false;
+        $query = self::$_db->fetchRow(self::$_db->select()->from('table.plugins')->where('package = ?', $package));
+        $has = ($query) ? true : false;
 
         if ($has === true) {
+            if ($plugin["version"] > $query["version"]) self::update($package);
             self::$_db->query(
                 self::$_db->update("table.plugins")->rows([
                     "status" => "enable"
@@ -221,7 +227,7 @@ class Plugin
         self::$_enabled[$package] = self::$_plugins[$package];
 
         $instance = self::__loadPlugin($plugin);
-        if ($instance["status"] === false) throw new \Exception($instance["message"]);
+        if ($instance["status"] === false) throw new Exception($instance["message"]);
         self::$_instance_plugins[$package] = $instance["instance"];
         if ($console === true) Console::success("插件 [" . $package . "] 启用成功", "Plugin");
 
@@ -273,6 +279,32 @@ class Plugin
 
         if ($console === true) Console::success("插件 [" . $package . "] 禁用成功", "Plugin");
         return ["status" => "disable", "message" => "插件禁用成功"];
+    }
+
+    /**
+     * 升级插件 (私有方法不允许外部调用)
+     * 
+     * @param string $package  插件包名
+     * @param bool $console    是否在控制台输出日志
+     */
+    private static function update($package, $console = true) : array {
+        if (!self::has($package, false)) {
+            if ($console === true) Console::warning("插件 [" . $package . "] 不存在，升级失败", "Plugin");
+            return ["status" => "error", "message" => "插件不存在，升级失败"];
+        }
+
+        $plugin = self::getInfo($package);
+        $pl = "\\OAPIPlugin\\" . $plugin["package"] . "\\Plugin";
+
+        if (!method_exists($pl, "update")) {
+            if ($console === true) Console::warning("插件 [" . $package . "] 的更新方法不存在，跳过更新", "Plugin");
+            return ["status" => "warning", "message" => "未找到插件更新方法，跳过更新"];
+        }
+
+        (new $pl())->update();
+        if ($console === true) Console::success("插件 [" . $package . "] 已更新至 Ver" . $plugin["version"], "Plugin");
+
+        return ["status" => "update", "message" => "插件升级成功"];
     }
 
     /**
@@ -338,8 +370,10 @@ class Plugin
 
     /**
      * 加载插件
+     * 
+     * @param array $plugin    插件信息数组
      */
-    private static function __loadPlugin(array $plugin)
+    private static function __loadPlugin(array $plugin) : array
     {
         if (!file_exists($plugin["file"])) return ["status" => false, "message" => "插件源文件不存在，无法正确加载"];
 
