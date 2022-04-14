@@ -111,13 +111,17 @@ class Parser
         $this->_params[] = $params[0];
 
         if (1 == $paramsNum) {
-            return sprintf(self::$_defaultRegx['char'], '+');
+            return sprintf(!empty(self::$_userRegx[$params[0]]) ? self::$_userRegx[$params[0]] : self::$_defaultRegx['char'], '+');
         } elseif (2 == $paramsNum) {
-            return sprintf(self::$_defaultRegx[$params[1]], '+');
+            return sprintf(!empty(self::$_userRegx[$params[1]]) ? self::$_userRegx[$params[1]] : self::$_defaultRegx[$params[1]], '+');
         } elseif (3 == $paramsNum) {
-            return sprintf(self::$_defaultRegx[$params[1]], $params[2] > 0 ? '{' . $params[2] . '}' : '*');
+            return sprintf(
+                !empty(self::$_userRegx[$params[1]]) ? self::$_userRegx[$params[1]] : self::$_defaultRegx[$params[1]],
+                $params[2] > 0 ? '{' . $params[2] . '}' : '*');
         } elseif (4 == $paramsNum) {
-            return sprintf(self::$_defaultRegx[$params[1]], '{' . $params[2] . ',' . $params[3] . '}');
+            return sprintf(
+                !empty(self::$_userRegx[$params[1]]) ? self::$_userRegx[$params[1]] : self::$_defaultRegx[$params[1]],
+                '{' . $params[2] . ',' . $params[3] . '}');
         }
 
         return $matches[0];
