@@ -2,7 +2,7 @@
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 11:33:08
- * @LastEditTime: 2021-12-03 12:28:27
+ * @LastEditTime: 2022-04-17 15:50:05
  */
 
 namespace OAPI\DB;
@@ -56,7 +56,7 @@ class DB
 
     private static $_instance;
 
-    public function __construct($adapter, $host, int $port, $db, $username, $password, $charset = "utf8mb4", $prefix = "OAPI_", $engine)
+    public function __construct($adapter, $host, int $port, $db, $username, $password, $charset = "utf8mb4", $prefix = "OAPI_", $engine = "InnoDB")
     {
         $adapterName = $adapter == 'Mysql' ? 'Mysqli' : $adapter;
         $this->_adapterName = $adapterName;

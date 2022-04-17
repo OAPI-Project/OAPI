@@ -2,7 +2,7 @@
 /**
  * @Author: ohmyga
  * @Date: 2021-10-22 11:03:01
- * @LastEditTime: 2021-12-25 03:03:12
+ * @LastEditTime: 2022-04-17 15:52:00
  */
 
 namespace OAPI\Console;
@@ -153,7 +153,7 @@ class Console {
     /**
      * 指定类型日志输出函数
      */
-    private static function __logFunc($head, $module = null, $message, $color, $saveLog = true) {
+    private static function __logFunc($head, $module = null, $message = "", $color = "", $saveLog = true) {
         $text = self::getHead($head);
         $text .= ($module !== null) ? "[{$module}] " : " ";
         $text .= $message;
