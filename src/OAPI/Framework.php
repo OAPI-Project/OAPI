@@ -98,9 +98,6 @@ class Framework
      */
     public function __construct()
     {
-        // 设置框架启动的时间
-        self::$start_run_time = time();
-
         /** 引入常量 */
         require_once __DIR__ . "/global_defines.php";
 
@@ -135,6 +132,9 @@ class Framework
             // 设置时区
             $timezone = $config["timezone"] ?? "Asia/Shanghai";
             date_default_timezone_set($timezone);
+            
+            // 设置框架启动的时间
+            self::$start_run_time = time();
 
             $motd = $this->getLineMotd();
 
